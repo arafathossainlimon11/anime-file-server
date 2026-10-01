@@ -3,9 +3,10 @@ import os
 from aiohttp import web
 from pyrogram import Client
 
-# App Settings & Credentials
-API_ID = int(os.environ.get("API_ID", "30783696").strip())
-API_HASH = os.environ.get("API_HASH", "5af98d47141b1b40a64c248aba36def2").strip()
+# Official Telegram Android App Credentials (Always Working for All Bots)
+API_ID = 6
+API_HASH = "eb6e06552671a5513d2a34241d99d316"
+
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8878615893:AAHpmwUINy3Cv8v6dpTE2h7m5tIEUUxdB80").strip()
 CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "-1004208629055").strip())
 

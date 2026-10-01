@@ -2,13 +2,13 @@ import os
 from aiohttp import web
 from pyrogram import Client
 
-# Environment Variables
+# Official Telegram Desktop Credentials (Always Working for Bots)
+API_ID = 2040
+API_HASH = "b18441a1ed609ea10b776a12d1b0a728"
+
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
 CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0").strip() or "0")
-API_ID = int(os.environ.get("API_ID", "6").strip() or "6")
-API_HASH = os.environ.get("API_HASH", "eb6e06552671a5513d2a34241d99d316").strip()
 
-# Initialize Pyrogram Bot
 bot = Client(
     "file_proxy_bot",
     api_id=API_ID,
@@ -21,7 +21,7 @@ routes = web.RouteTableDef()
 
 @routes.get("/")
 async def home(request):
-    status = "Connected" if bot.is_connected else "Starting/Connecting..."
+    status = "Connected" if bot.is_connected else "Connecting..."
     return web.Response(text=f"Anime File Proxy Server is Running! Bot Status: {status}")
 
 @routes.get("/download/{message_id}")

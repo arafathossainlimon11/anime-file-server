@@ -1,4 +1,10 @@
+import asyncio
 import os
+
+# Create event loop before importing Pyrogram
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 from aiohttp import web
 from pyrogram import Client
 
@@ -47,7 +53,7 @@ async def download_file(request):
 app = web.Application()
 app.add_routes(routes)
 
-async def main():
+async def start_services():
     await bot.start()
     runner = web.AppRunner(app)
     await runner.setup()
@@ -56,7 +62,5 @@ async def main():
     await site.start()
 
 if __name__ == "__main__":
-    import asyncio
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    loop.run_until_complete(start_services())
     loop.run_forever()

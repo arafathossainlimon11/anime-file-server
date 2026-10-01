@@ -1,20 +1,14 @@
-import asyncio
 import os
-
-# Pyrogram ইম্পোর্ট করার আগেই ইভেন্ট লুপ সেট করা আবশ্যক
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
 from aiohttp import web
 from pyrogram import Client
 
-# টেলিগ্রামের অফিশিয়াল স্থায়ী API (Render Env এরর এড়াতে সরাসরি ফিক্সড)
-API_ID = 6
-API_HASH = "eb6e06552671a5513d2a34241d99d316"
-
+# Environment Variables
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
-CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0").strip())
+CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0").strip() or "0")
+API_ID = int(os.environ.get("API_ID", "6").strip() or "6")
+API_HASH = os.environ.get("API_HASH", "eb6e06552671a5513d2a34241d99d316").strip()
 
+# Initialize Pyrogram Bot
 bot = Client(
     "file_proxy_bot",
     api_id=API_ID,
@@ -27,15 +21,19 @@ routes = web.RouteTableDef()
 
 @routes.get("/")
 async def home(request):
-    return web.Response(text="Anime File Proxy Server is Running Successfully!")
+    status = "Connected" if bot.is_connected else "Starting/Connecting..."
+    return web.Response(text=f"Anime File Proxy Server is Running! Bot Status: {status}")
 
 @routes.get("/download/{message_id}")
 async def download_file(request):
+    if not bot.is_connected:
+        return web.Response(text="Bot is connecting to Telegram, please try again in a few seconds!", status=503)
+        
     try:
         msg_id = int(request.match_info['message_id'])
         msg = await bot.get_messages(CHANNEL_ID, msg_id)
         if not msg or not msg.media:
-            return web.Response(text="File not found!", status=404)
+            return web.Response(text="File not found in Telegram Channel!", status=404)
 
         media = getattr(msg, msg.media.value, None)
         file_size = getattr(media, "file_size", 0)
@@ -56,20 +54,24 @@ async def download_file(request):
 
         return response
     except Exception as e:
-        return web.Response(text=f"Error: {str(e)}", status=500)
+        return web.Response(text=f"Error streaming file: {str(e)}", status=500)
+
+async def start_bot(app):
+    try:
+        await bot.start()
+        print(">>> Telegram Bot Started Successfully <<<")
+    except Exception as e:
+        print(f">>> Error starting bot: {e} <<<")
+
+async def stop_bot(app):
+    if bot.is_connected:
+        await bot.stop()
 
 app = web.Application()
 app.add_routes(routes)
-
-async def start_server():
-    await bot.start()
-    runner = web.AppRunner(app)
-    await runner.setup()
-    port = int(os.environ.get("PORT", 8080))
-    site = web.TCPSite(runner, "0.0.0.0", port)
-    await site.start()
-    print(f"Server is live on port {port}")
-    await asyncio.Event().wait()
+app.on_startup.append(start_bot)
+app.on_cleanup.append(stop_bot)
 
 if __name__ == "__main__":
-    loop.run_until_complete(start_server())
+    port = int(os.environ.get("PORT", 8080))
+    web.run_app(app, host="0.0.0.0", port=port)

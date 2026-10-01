@@ -1,34 +1,35 @@
 import asyncio
 import os
+from urllib.parse import quote
 from aiohttp import web
 from pyrogram import Client
 
-# Official Telegram Android App Credentials (Always Working for All Bots)
-API_ID = 6
-API_HASH = "eb6e06552671a5513d2a34241d99d316"
+# Direct Hardcoded Credentials (Zero Render Config Needed)
+API_ID = 30783696
+API_HASH = "5af98d47141b1b40a64c248aba36def2"
+BOT_TOKEN = "8878615893:AAHpmwUINy3Cv8v6dpTE2h7m5tIEUUxdB80"
+CHANNEL_ID = -1004208629055
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8878615893:AAHpmwUINy3Cv8v6dpTE2h7m5tIEUUxdB80").strip()
-CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "-1004208629055").strip())
+bot = Client(
+    "file_proxy_bot",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    bot_token=BOT_TOKEN,
+    in_memory=True
+)
 
 routes = web.RouteTableDef()
-bot = None
-bot_connected = False
-bot_error_message = None
 
 @routes.get("/")
 async def home(request):
-    if bot_connected:
+    if bot.is_connected:
         return web.Response(text="Anime File Proxy Server is Live & Telegram Bot Connected Successfully!")
-    elif bot_error_message:
-        return web.Response(text=f"Server is Running, but Telegram Bot Error: {bot_error_message}")
-    else:
-        return web.Response(text="Server is Running. Connecting to Telegram Bot...")
+    return web.Response(text="Anime File Proxy Server is Running! Connecting to Telegram Bot...")
 
 @routes.get("/download/{message_id}")
 async def download_file(request):
-    if not bot_connected:
-        err = bot_error_message or "Connecting..."
-        return web.Response(text=f"Bot not connected yet. Details: {err}", status=503)
+    if not bot.is_connected:
+        return web.Response(text="Bot is connecting to Telegram, please wait 5 seconds and refresh!", status=503)
         
     try:
         msg_id = int(request.match_info['message_id'])
@@ -40,12 +41,13 @@ async def download_file(request):
         media = getattr(msg, msg.media.value, None)
         file_size = getattr(media, "file_size", 0)
         file_name = getattr(media, "file_name", f"anime_{msg_id}.mp4")
+        safe_file_name = quote(file_name)
 
         response = web.StreamResponse(
             status=200,
             headers={
                 'Content-Type': 'application/octet-stream',
-                'Content-Disposition': f'attachment; filename="{file_name}"',
+                'Content-Disposition': f'attachment; filename="{safe_file_name}"',
                 'Content-Length': str(file_size)
             }
         )
@@ -56,37 +58,23 @@ async def download_file(request):
 
         return response
     except Exception as e:
-        return web.Response(text=f"Error downloading file: {str(e)}", status=500)
+        return web.Response(text=f"Error streaming file: {str(e)}", status=500)
 
-async def start_telegram_bot(app):
-    global bot, bot_connected, bot_error_message
+async def start_bot(app):
     try:
-        bot = Client(
-            "file_proxy_bot",
-            api_id=API_ID,
-            api_hash=API_HASH,
-            bot_token=BOT_TOKEN,
-            in_memory=True
-        )
         await bot.start()
-        bot_connected = True
         print(">>> Telegram Bot Connected Successfully! <<<")
     except Exception as e:
-        bot_connected = False
-        bot_error_message = str(e)
         print(f">>> Telegram Bot Error: {e} <<<")
 
-async def cleanup_bot(app):
-    if bot and bot.is_connected:
+async def stop_bot(app):
+    if bot.is_connected:
         await bot.stop()
-
-async def start_bg_task(app):
-    asyncio.create_task(start_telegram_bot(app))
 
 app = web.Application()
 app.add_routes(routes)
-app.on_startup.append(start_bg_task)
-app.on_cleanup.append(cleanup_bot)
+app.on_startup.append(start_bot)
+app.on_cleanup.append(stop_bot)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))

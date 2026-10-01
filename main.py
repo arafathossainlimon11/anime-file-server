@@ -1,10 +1,5 @@
-import asyncio
 import os
-
-# Create event loop before importing Pyrogram
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
+import asyncio
 from aiohttp import web
 from pyrogram import Client
 
@@ -13,7 +8,13 @@ API_HASH = os.environ.get("API_HASH", "")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0"))
 
-bot = Client("file_proxy_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+bot = Client(
+    "file_proxy_bot",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    bot_token=BOT_TOKEN,
+    in_memory=True
+)
 
 routes = web.RouteTableDef()
 
@@ -53,14 +54,15 @@ async def download_file(request):
 app = web.Application()
 app.add_routes(routes)
 
-async def start_services():
+async def main():
     await bot.start()
     runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get("PORT", 8080))
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
+    print(f"Server is live on port {port}")
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    loop.run_until_complete(start_services())
-    loop.run_forever()
+    asyncio.run(main())

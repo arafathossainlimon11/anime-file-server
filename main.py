@@ -1,18 +1,19 @@
 import asyncio
 import os
 
-# Pyrogram ইম্পোর্ট করার আগেই ইভেন্ট লুপ তৈরি করা আবশ্যক
+# Pyrogram ইম্পোর্ট করার আগেই ইভেন্ট লুপ সেট করা আবশ্যক
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 from aiohttp import web
 from pyrogram import Client
 
-# টেলিগ্রামের অফিশিয়াল API ID ও Hash
-API_ID = int(os.environ.get("API_ID", "6"))
-API_HASH = os.environ.get("API_HASH", "eb6e06552671a5513d2a34241d99d316")
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0"))
+# টেলিগ্রামের অফিশিয়াল স্থায়ী API (Render Env এরর এড়াতে সরাসরি ফিক্সড)
+API_ID = 6
+API_HASH = "eb6e06552671a5513d2a34241d99d316"
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "0").strip())
 
 bot = Client(
     "file_proxy_bot",
@@ -26,7 +27,7 @@ routes = web.RouteTableDef()
 
 @routes.get("/")
 async def home(request):
-    return web.Response(text="Anime File Proxy Server is Running!")
+    return web.Response(text="Anime File Proxy Server is Running Successfully!")
 
 @routes.get("/download/{message_id}")
 async def download_file(request):

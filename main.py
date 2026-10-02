@@ -4,11 +4,11 @@ from urllib.parse import quote
 from aiohttp import web
 from pyrogram import Client
 
-# Direct Hardcoded Credentials (Zero Render Config Needed)
-API_ID = 30783696
-API_HASH = "5af98d47141b1b40a64c248aba36def2"
-BOT_TOKEN = "8878615893:AAHpmwUINy3Cv8v6dpTE2h7m5tIEUUxdB80"
-CHANNEL_ID = -1004208629055
+# Credentials from Environment Variables (Secure)
+API_ID = int(os.environ.get("API_ID", "30783696").strip())
+API_HASH = os.environ.get("API_HASH", "5af98d47141b1b40a64c248aba36def2").strip()
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+CHANNEL_ID = int(os.environ.get("CHANNEL_ID", "-1004208629055").strip())
 
 bot = Client(
     "file_proxy_bot",
@@ -24,12 +24,12 @@ routes = web.RouteTableDef()
 async def home(request):
     if bot.is_connected:
         return web.Response(text="Anime File Proxy Server is Live & Telegram Bot Connected Successfully!")
-    return web.Response(text="Anime File Proxy Server is Running! Connecting to Telegram Bot...")
+    return web.Response(text="Server is Running! Connecting to Telegram Bot...")
 
 @routes.get("/download/{message_id}")
 async def download_file(request):
     if not bot.is_connected:
-        return web.Response(text="Bot is connecting to Telegram, please wait 5 seconds and refresh!", status=503)
+        return web.Response(text="Bot is connecting to Telegram, please wait a few seconds and refresh!", status=503)
         
     try:
         msg_id = int(request.match_info['message_id'])
